@@ -1,0 +1,7 @@
+1 - npm install para instalar os modulos (NodeRSA) - responsavel pela cript/decript
+2 - Rode no terminal node index.js
+
+** Um menu será exibido.
+
+- Para carregar uma chave, coloque o endereço do arquivo .pem
+- Para carregar a mensagem para descriptar, coloque o endereço da mensagem criptografada.

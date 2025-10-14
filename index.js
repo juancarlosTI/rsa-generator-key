@@ -29,8 +29,11 @@ async function showMenu() {
     console.log('5. Opção 5 - Gerar CSR')
 }
 
-function buildSanExtension(dnsNames, emails) {
+function buildSanExtension(dnsNames, emails, cpfs) {
     const altNames = [];
+    for (const cpf of cpfs){
+        altNames.push({ type: 3, value: cpf});
+    }
     for (const d of dnsNames) {
         altNames.push({ type: 2, value: d }); // 2 = dNSName
     }
@@ -164,6 +167,7 @@ async function main() {
                     // SAN (Subject Alternative Name)
                     const SAN_DNS = [`${usuarios[i].nome}.exemplo.local`];
                     const SAN_EMAILS = [`${usuarios[i].email}`];
+                    const SAN_CPF = [`${usuarios[i].CPF}`]
 
                     const map = {
                         C: 'C',
@@ -191,7 +195,7 @@ async function main() {
 
                     console.log("Publickey (Forge): ", csr.publicKey);
 
-                    const sanExt = buildSanExtension(SAN_DNS, SAN_EMAILS);
+                    const sanExt = buildSanExtension(SAN_DNS, SAN_EMAILS, SAN_CPF);
                     if (sanExt) {
                         csr.setAttributes([
                             {
@@ -216,7 +220,7 @@ async function main() {
 
                     await writeFile(`usuarios/${usuarios[i].nome}/csr/csr_key_${usuarios[i].nome}.csr.pem`, csrPem);
 
-                    console.log('CSR gerada com sucesso em: csr/csr_key.csr.pem');
+                    console.log(`CSR gerada com sucesso em: usuarios/${usuarios[i].nome}csr/csr_key.csr.pem`);
                 }
 
                 break;

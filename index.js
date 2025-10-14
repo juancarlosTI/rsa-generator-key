@@ -11,6 +11,12 @@ import forge from 'node-forge';
 //const KEYS_DIR = path.join(BASE_DIR, 'keys', 'rsa');
 //const CSR_DIR = path.join(BASE_DIR, 'csrs');
 
+// const usuarios = [
+//     { nome: 'joao', email: 'joao@example.com', CPF: '123.456.666-00' },
+//     { nome: 'maria', email: 'maria@example.com', CPF: '123.456.777-00' },
+//     { nome: 'atacante', email: 'atacante@example.com', CPF: '123.456.888-00' }
+// ]
+
 // Cria a interface de leitura
 const readLine = createInterface({ input, output });
 
@@ -40,24 +46,38 @@ function buildSanExtension(dnsNames, emails) {
 }
 
 async function main() {
+
+    
+    const usuarios = [
+        { nome: 'joao', email: 'joao@example.com', CPF: '123.456.666-00' },
+        { nome: 'maria', email: 'maria@example.com', CPF: '123.456.777-00' },
+        { nome: 'atacante', email: 'atacante@example.com', CPF: '123.456.888-00' }
+    ]
+
     let running = true;
     let key = 0;
     while (running) {
         await showMenu(); // Exibe o menu
         const res = await readLine.question('Digite a opção para navegar na aplicação: ');
+        
+        
 
         switch (res) {
             case '1':
                 console.log('Gerar novas chaves RSA / Utilizar chave privada existente :');
                 let generateOption = await readLine.question('1- Gerar chave\n2- Carregar chave');
                 if (generateOption == 1) {
-                    key = new NodeRSA({ b: 2048 });
-                    let publicKeyString = key.exportKey('public');
-                    let privateKeyString = key.exportKey('private');
+                    
+                    for (let i = 0; i < usuarios.length; i++) {
+                        key = new NodeRSA({ b: 2048 });
+                        let publicKeyString = key.exportKey('public');
+                        let privateKeyString = key.exportKey('private');
 
-                    await writeFile('keys/public_key.pem', publicKeyString);
-                    await writeFile('keys/private_key.pem', privateKeyString);
-                    console.log(`Typeof - Private: ${typeof (privateKeyString)} -\nPublic: ${typeof (publicKeyString)}`);
+                        await writeFile(`usuarios/${usuarios[i].nome}/public_key_${usuarios[i].nome}.pem`, publicKeyString);
+                        await writeFile(`usuarios/${usuarios[i].nome}/private_key_${usuarios[i].nome}.pem`, privateKeyString);
+                        console.log(`Typeof - Private: ${typeof (privateKeyString)} -\nPublic: ${typeof (publicKeyString)}`);
+                    }
+
 
                 } else if (generateOption == 2) {
                     let pathToPrivateKey = await readLine.question('Endereço do arquivo chave_privada.pem: ');
@@ -107,97 +127,98 @@ async function main() {
                 running = false;
                 break;
             case '5':
-                console.log("")
+                for (let i = 0; i < usuarios.length; i++) {
+                    // Ler chave privada
+                    let pathToPrivateKey = await readLine.question(`Endereço do arquivo chave_privada.pem do :${usuarios[i].nome} `);
+                    const privateKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
 
-                // Ler chave privada
-                let pathToPrivateKey = await readLine.question('Endereço do arquivo chave_privada.pem: ');
-                const privateKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
-                
-                // Forge
-                const loadPrivateKey = forge.pki.privateKeyFromPem(privateKeyContent);
+                    // Forge
+                    const loadPrivateKey = forge.pki.privateKeyFromPem(privateKeyContent);
 
-                if (!loadPrivateKey){
-                    console.log("Erro com a chave privada");
-                }
-
-                // console.log("PrivateKey (Forge): ", loadPrivateKey);
-
-                const CSR_DIR = path.join('./', 'csr');
-                if (!fs.existsSync(CSR_DIR)) fs.mkdirSync(CSR_DIR, { recursive: true });
-
-                console.log("Exists: ", fs.existsSync(CSR_DIR));
-                // #### Campos do DN sugeridos
-                //- Country Name (C): BR
-                //- State or Province (ST): <Estado>
-                //- Locality (L): <Cidade>
-                //- Organization (O): <Organização>
-                //- Organizational Unit (OU): <Unidade>
-                //- Common Name (CN): <FQDN ou Nome do titular></FQDN>
-                const DN = {
-                    C: 'BR',
-                    ST: 'Sao Paulo',
-                    L: 'Sao Paulo',
-                    O: 'Exemplo LTDA',
-                    OU: 'TI',
-                    CN: 'Juan Carlos', // Para servidor TLS use o FQDN
-                };
-
-                // SAN (Subject Alternative Name)
-                const SAN_DNS = ['server.exemplo.local'];
-                const SAN_EMAILS = ['admin@dominio.local'];
-
-                const map = {
-                    C: 'C',
-                    ST: 'ST',
-                    L: 'L',
-                    O: 'O',
-                    OU: 'OU',
-                    CN: 'CN',
-                };
-                const attrs = [];
-                Object.keys(map).forEach((k) => {
-                    if (DN[k]) {
-                        attrs.push({ shortName: map[k], value: DN[k] });
+                    if (!loadPrivateKey) {
+                        console.log("Erro com a chave privada");
                     }
-                });
 
-                // 2) Criar CSR
-                const csr = forge.pki.createCertificationRequest();
+                    // console.log("PrivateKey (Forge): ", loadPrivateKey);
 
-                // Subject
-                csr.setSubject(attrs);
+                    const CSR_DIR = path.join(`./usuarios/${usuarios[i].nome}`, `csr`);
+                    if (!fs.existsSync(CSR_DIR)) fs.mkdirSync(CSR_DIR, { recursive: true });
 
-                // Public key derivada da private key
-                csr.publicKey = forge.pki.rsa.setPublicKey(loadPrivateKey.n, loadPrivateKey.e);
+                    console.log("Exists: ", fs.existsSync(CSR_DIR));
+                    // #### Campos do DN sugeridos
+                    //- Country Name (C): BR
+                    //- State or Province (ST): <Estado>
+                    //- Locality (L): <Cidade>
+                    //- Organization (O): <Organização>
+                    //- Organizational Unit (OU): <Unidade>
+                    //- Common Name (CN): <FQDN ou Nome do titular></FQDN>
+                    const DN = {
+                        C: 'BR',
+                        ST: 'Sao Paulo',
+                        L: 'Sao Paulo',
+                        O: 'Exemplo LTDA',
+                        OU: 'TI',
+                        CN: `${usuarios[i].nome}`, // Para servidor TLS use o FQDN
+                    };
 
-                console.log("Publickey (Forge): ", csr.publicKey);
+                    // SAN (Subject Alternative Name)
+                    const SAN_DNS = [`${usuarios[i].nome}.exemplo.local`];
+                    const SAN_EMAILS = [`${usuarios[i].email}`];
 
-                const sanExt = buildSanExtension(SAN_DNS, SAN_EMAILS);
-                if (sanExt) {
-                    csr.setAttributes([
-                    {
-                        name: 'extensionRequest',
-                        extensions: [sanExt],
-                    },
-                    ]);
+                    const map = {
+                        C: 'C',
+                        ST: 'ST',
+                        L: 'L',
+                        O: 'O',
+                        OU: 'OU',
+                        CN: 'CN',
+                    };
+                    const attrs = [];
+                    Object.keys(map).forEach((k) => {
+                        if (DN[k]) {
+                            attrs.push({ shortName: map[k], value: DN[k] });
+                        }
+                    });
+
+                    // 2) Criar CSR
+                    const csr = forge.pki.createCertificationRequest();
+
+                    // Subject
+                    csr.setSubject(attrs);
+
+                    // Public key derivada da private key
+                    csr.publicKey = forge.pki.rsa.setPublicKey(loadPrivateKey.n, loadPrivateKey.e);
+
+                    console.log("Publickey (Forge): ", csr.publicKey);
+
+                    const sanExt = buildSanExtension(SAN_DNS, SAN_EMAILS);
+                    if (sanExt) {
+                        csr.setAttributes([
+                            {
+                                name: 'extensionRequest',
+                                extensions: [sanExt],
+                            },
+                        ]);
+                    }
+
+                    // 3) Assinar CSR com SHA-256
+                    csr.sign(loadPrivateKey, forge.md.sha256.create());
+
+                    // 4) Validar CSR localmente
+                    const valid = csr.verify();
+                    if (!valid) {
+                        console.error('Falha na verificação local da CSR.');
+                        process.exit(1);
+                    }
+
+                    const csrPem = forge.pki.certificationRequestToPem(csr);
+                    const csrPath = path.join(CSR_DIR, 'server_exemplo_rsa.csr.pem');
+
+                    await writeFile(`usuarios/${usuarios[i].nome}/csr/csr_key_${usuarios[i].nome}.csr.pem`, csrPem);
+
+                    console.log('CSR gerada com sucesso em: csr/csr_key.csr.pem');
                 }
 
-                // 3) Assinar CSR com SHA-256
-                csr.sign(loadPrivateKey, forge.md.sha256.create());
-
-                // 4) Validar CSR localmente
-                const valid = csr.verify();
-                if (!valid) {
-                    console.error('Falha na verificação local da CSR.');
-                    process.exit(1);
-                }
-
-                const csrPem = forge.pki.certificationRequestToPem(csr);
-                const csrPath = path.join(CSR_DIR, 'server_exemplo_rsa.csr.pem');
-
-                await writeFile('csr/csr_key.csr.pem', csrPem);
-
-                console.log('CSR gerada com sucesso em: csr/csr_key.csr.pem');
                 break;
             default:
                 console.log('Opção inválida! Tente novamente.');

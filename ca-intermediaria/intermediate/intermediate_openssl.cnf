@@ -1,0 +1,19 @@
+
+[ req ]
+distinguished_name = req_distinguished_name
+req_extensions = v3_intermediate_req
+prompt = no
+
+[ req_distinguished_name ]
+C = BR
+ST = Sao Paulo
+L = Sao Paulo
+O = MinhaCorp
+OU = Infra
+CN = MinhaCorp Intermediate CA
+
+[ v3_intermediate_req ]
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, digitalSignature, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer

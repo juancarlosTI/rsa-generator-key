@@ -1,0 +1,26 @@
+
+[ req ]
+default_bits = 2048
+prompt = no
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+
+[ req_distinguished_name ]
+C = BR
+ST = Sao Paulo
+L = Sao Paulo
+O = Exemplo LTDA
+OU = TI
+CN = maria
+emailAddress = maria@example.com
+serialNumber = 123.456.777-00
+
+[ v3_req ]
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
+subjectAltName = @alt_names
+
+[ alt_names ]
+email.1 = maria@example.com
+# otherName format: OID;UTF8:<value>  --> OID usado: 1.2.3.4.5.6.7.8.1 (exemplo privado)
+otherName.1 = 1.2.3.4.5.6.7.8.1;UTF8:123.456.777-00

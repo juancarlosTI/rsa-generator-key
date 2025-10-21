@@ -1,0 +1,12 @@
+
+[ v3_user_cert ]
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
+subjectAltName = @alt_names
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+
+[ alt_names ]
+email.1 = maria@example.com
+otherName.1 = 1.2.3.4.5.6.7.8.1;UTF8:123.456.777-00

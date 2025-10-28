@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "createdAt": "2025-10-28T21:31:47.915Z",
+    "sourceKeyPath": "usuarios/joao/joao.key.pem"
+  },
+  "message": "tchananana",
+  "hashSHA256": "b37e11445b4be026c80d1d332f5a89cfa98aa4240155850a1b1b1d7779293724",
+  "signatureBase64": "lloBdy/KdGuD4XX3X0lej/pSKY5dbeiQ8i05tFU5IxugG7Nf4qgNTi95mn8TdSyKtXdYWUDEqCByz9eZd7OiiHho2r1bOEDDykkTS2erIqf5nVEDGJKWuOt0HgmQjed0DPEz5gGJ/nxbokxfFN4e3UVJNtDOQreKgykWRrvUYAZb+4dx77R2FD/NYWidQokWO6ea2Y154tDngMMH89hcm9rN2+a46bSC1jMTUhypNOb45WfnfH69bMUwUTOoUG/tKYha1GdqUJFHtB689bAmnApXQZyUAo1wAwWN6PuS7RMPtd0AlHjb3ThNAOKKXzQGb/Ar2K+fc/uVxoFRwcMN/A==",
+  "publicPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt0ZtcLwiHoxWYvzuFib8\nca5e01oIFouhSwkINO6GGgnUX4nfY5HvDSzIzh4+emno6H3q39ngPHGSK/bwm9FB\nCM/wbZmADkFllcb+2b8S5bDu0M6TfijMrLqiYsXA/U853i0Jm9SJfrlysl97aoiR\nEtjClLXb3MaaNM1iN+UfWkHBWq0d4uLuIdCU2p2sGc0wVNzZYmkjg2mSc3yPIqmI\ntS4zN2poSKNZCLMICqqveU2UUk55rUJ16v7FiyqJrFIoCAkLWw5i5iO3/tNWMIIK\ncUsP6fVa3Fr8E3fya7w0f381SPjESWtvMNLFiWBZwsFTo6qGUjouayXPBnimn5D/\nnQIDAQAB\n-----END PUBLIC KEY-----\n"
+}

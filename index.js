@@ -22,36 +22,35 @@ import crypto from 'crypto'
 const readLine = createInterface({ input, output });
 
 async function showMenu() {
-    console.log('\n=== Menu ===');
-    
-    //console.log('1. Opção 1 - Gerar novas chaves RSA');
-    //console.log('2. Opção 2 - Gerar CSR');
-    console.log('1. Opção 1 - Gerar CA - RAIZ, INTERMEDIARIA e gerar CERT dos usuarios');
-    console.log('2. Opção 2 - Assinar documento com chave privada de um usuario');
-    console.log('3. Opção 3 - Verificar documento assinado (case 5):');
-    //console.log('2. Opção 2 - Encriptar mensagem digitada: ');
-    //console.log('3. Opção 3 - Decriptar mensagem digitada');
-    console.log('4. Opção 4 - Sair');
-    
+  console.log('\n=== Menu ===');
+
+  console.log('1. Opção 1 - Gerar CA - RAIZ, INTERMEDIARIA e gerar CERT dos usuarios');
+  console.log('2. Opção 2 - Assinar documento com chave privada de um usuario');
+  console.log('3. Opção 3 - Verificar documento assinado (case 5):');
+  console.log('4. Opção 4 - Sair');
+  console.log('5. Opção 5 - Gerar CA - FAKE');
+  console.log('6. Opção 6 - Gerar usuario - FAKE');
+  console.log('7. Opção 7 - Tentar validar documento com usuario fake');
+
 }
 
 function buildSanExtension(dnsNames, emails, cpfs) {
-    const altNames = [];
-    for (const cpf of cpfs){
-        altNames.push({ type: 3, value: cpf});
-    }
-    for (const d of dnsNames) {
-        altNames.push({ type: 2, value: d }); // 2 = dNSName
-    }
-    for (const e of emails) {
-        altNames.push({ type: 1, value: e }); // 1 = rfc822Name (email)
-    }
-    if (altNames.length === 0) return null;
+  const altNames = [];
+  for (const cpf of cpfs) {
+    altNames.push({ type: 3, value: cpf });
+  }
+  for (const d of dnsNames) {
+    altNames.push({ type: 2, value: d }); // 2 = dNSName
+  }
+  for (const e of emails) {
+    altNames.push({ type: 1, value: e }); // 1 = rfc822Name (email)
+  }
+  if (altNames.length === 0) return null;
 
-    return {
-        name: 'subjectAltName',
-        altNames,
-    };
+  return {
+    name: 'subjectAltName',
+    altNames,
+  };
 }
 
 function runOpenSSL(args, opts = {}) {
@@ -277,20 +276,20 @@ otherName.1 = 1.2.3.4.5.6.7.8.1;UTF8:${u.CPF}
 }
 
 async function generateCsrWithOpenSSL({ privateKeyContent, DN, SAN_DNS = [], SAN_EMAILS = [], cpf, outDir, nome }) {
-        // garante diretório
-    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-    const privateKeyPath = path.join(outDir, `private_key_${nome}_from_openssl.pem`);
-    await writeFile(privateKeyPath, privateKeyContent, { mode: 0o600 });
+  // garante diretório
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+  const privateKeyPath = path.join(outDir, `private_key_${nome}_from_openssl.pem`);
+  await writeFile(privateKeyPath, privateKeyContent, { mode: 0o600 });
 
-                    // Monta o subject. Mantemos serialNumber como CPF (conforme seu código original)
-    const subj = `/C=${DN.C}/ST=${DN.ST}/L=${DN.L}/O=${DN.O}/OU=${DN.OU}/CN=${DN.CN}/serialNumber=${cpf}`;
+  // Monta o subject. Mantemos serialNumber como CPF (conforme seu código original)
+  const subj = `/C=${DN.C}/ST=${DN.ST}/L=${DN.L}/O=${DN.O}/OU=${DN.OU}/CN=${DN.CN}/serialNumber=${cpf}`;
 
-                    // Monta altNames
-    const altNamesLines = [];
-    SAN_DNS.forEach((d, idx) => { altNamesLines.push(`DNS.${idx + 1} = ${d}`); });
-    SAN_EMAILS.forEach((e, idx) => { altNamesLines.push(`email.${idx + 1} = ${e}`); });
+  // Monta altNames
+  const altNamesLines = [];
+  SAN_DNS.forEach((d, idx) => { altNamesLines.push(`DNS.${idx + 1} = ${d}`); });
+  SAN_EMAILS.forEach((e, idx) => { altNamesLines.push(`email.${idx + 1} = ${e}`); });
 
-    const opensslConfig = `
+  const opensslConfig = `
     [ req ]
     default_bits       = 2048
     prompt             = no
@@ -315,30 +314,30 @@ async function generateCsrWithOpenSSL({ privateKeyContent, DN, SAN_DNS = [], SAN
     ${altNamesLines.join('\n')}
     `;
 
-    const confPath = path.join(outDir, `openssl_${nome}.cnf`);
-    await writeFile(confPath, opensslConfig, { encoding: 'utf8' });
+  const confPath = path.join(outDir, `openssl_${nome}.cnf`);
+  await writeFile(confPath, opensslConfig, { encoding: 'utf8' });
 
-    const csrPath = path.join(outDir, `csr_key_${nome}.csr.pem`);
+  const csrPath = path.join(outDir, `csr_key_${nome}.csr.pem`);
 
-    try {
-        execFileSync('openssl', [
-        'req',
-        '-new',
-        '-key', privateKeyPath,
-        '-out', csrPath,
-        '-config', confPath,
-        '-sha256',
-        '-subj', subj
-        ], { stdio: 'pipe' }); // pipe para podermos capturar erro se necessário
+  try {
+    execFileSync('openssl', [
+      'req',
+      '-new',
+      '-key', privateKeyPath,
+      '-out', csrPath,
+      '-config', confPath,
+      '-sha256',
+      '-subj', subj
+    ], { stdio: 'pipe' }); // pipe para podermos capturar erro se necessário
 
-        const csrPem = await readFile(csrPath, { encoding: 'utf8' });
-        return { csrPem, csrPath };
-    } catch (err) {
-        // retorna o erro para o chamador tratar (não faz process.exit aqui)
-        throw new Error(`OpenSSL failed: ${err.message || err}`);
-    } finally {
-        // opcional: não removemos automaticamente a chave/conf; decisão sua
-    }
+    const csrPem = await readFile(csrPath, { encoding: 'utf8' });
+    return { csrPem, csrPath };
+  } catch (err) {
+    // retorna o erro para o chamador tratar (não faz process.exit aqui)
+    throw new Error(`OpenSSL failed: ${err.message || err}`);
+  } finally {
+    // opcional: não removemos automaticamente a chave/conf; decisão sua
+  }
 }
 
 // Função enxuta para verificar o documento gerado no case '5'
@@ -433,164 +432,345 @@ async function verifyDocumentFromCase5() {
   }
 }
 
+async function generateFakeCA({ outDir, subject }) {
+  await ensureDir(outDir);
+  const keyPath = path.join(outDir, 'rootFakeCA.key.pem');
+  const certPath = path.join(outDir, 'rootFakeCA.crt.pem');
+  const confPath = path.join(outDir, 'rootFake_openssl.cnf');
+
+  const rootConf = `
+[ req ]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+prompt = no
+
+[ req_distinguished_name ]
+C = ${subject.C}
+ST = ${subject.ST}
+L = ${subject.L}
+O = ${subject.O}
+OU = ${subject.OU}
+CN = ${subject.CN}
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, keyCertSign, cRLSign
+`;
+  await writeFile(confPath, rootConf, { encoding: 'utf8' });
+
+  // Gera chave RSA 4096
+  runOpenSSL(['genrsa', '-out', keyPath, '4096']);
+
+  // Gera certificado auto-assinado (root)
+  runOpenSSL([
+    'req', '-new', '-x509',
+    '-days', '3650',
+    '-key', keyPath,
+    '-out', certPath,
+    '-config', confPath,
+    '-sha256'
+  ]);
+
+  return { keyPath, certPath, confPath };
+
+}
+
+async function generateAndSignFakeUserCerts({ usuarioFake, outRootDir, fakePrivateKey, fakeCertKey }) {
+  console.log("Output: ", outRootDir);
+  const userDir = path.join(outRootDir, usuarioFake.nome);
+  await ensureDir(userDir);
+
+  const keyPath = path.join(userDir, `${usuarioFake.nome}.key.pem`);
+  const csrPath = path.join(userDir, `${usuarioFake.nome}.csr.pem`);
+  const certPath = path.join(userDir, `${usuarioFake.nome}.crt.pem`);
+  const reqConfPath = path.join(userDir, `${usuarioFake.nome}_req.cnf`);
+  const signConfPath = path.join(userDir, `${usuarioFake.nome}_sign.cnf`);
+
+  // Gera chave do usuário (2048)
+  runOpenSSL(['genrsa', '-out', keyPath, '2048']);
+
+  // Config do CSR com subject (serialNumber = CPF) e subjectAltName (email / otherName)
+  // Agora inclui emailAddress no distinguished_name para aparecer no subject
+  const userReqConf = `
+[ req ]
+default_bits = 2048
+prompt = no
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+
+[ req_distinguished_name ]
+C = BR
+ST = Sao Paulo
+L = Sao Paulo
+O = Exemplo LTDA
+OU = TI
+CN = ${usuarioFake.nome}
+emailAddress = ${usuarioFake.email}
+serialNumber = ${usuarioFake.CPF}
+
+[ v3_req ]
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
+subjectAltName = @alt_names
+
+[ alt_names ]
+email.1 = ${usuarioFake.email}
+# otherName format: OID;UTF8:<value>  --> OID usado: 1.2.3.4.5.6.7.8.1 (exemplo privado)
+otherName.1 = 1.2.3.4.5.6.7.8.1;UTF8:${usuarioFake.CPF}
+`;
+
+  // Config para assinatura do certificado do usuário (aplica authorityKeyIdentifier)
+  // Inclui alt_names idem para gerar o certificado final com SAN correto
+  const userSignConf = `
+[ v3_user_cert ]
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
+subjectAltName = @alt_names
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+
+[ alt_names ]
+email.1 = ${usuarioFake.email}
+otherName.1 = 1.2.3.4.5.6.7.8.1;UTF8:${usuarioFake.CPF}
+`;
+
+  await writeFile(reqConfPath, userReqConf, { encoding: 'utf8' });
+  await writeFile(signConfPath, userSignConf, { encoding: 'utf8' });
+
+  // Gera CSR (o subject será preenchido a partir de reqConfPath)
+  runOpenSSL([
+    'req', '-new',
+    '-key', keyPath,
+    '-out', csrPath,
+    '-config', reqConfPath,
+    '-sha256'
+  ]);
+
+  // Assina CSR com a CA Intermediária, usando signConfPath (tem authorityKeyIdentifier)
+  runOpenSSL([
+    'x509', '-req',
+    '-in', csrPath,
+    '-CA', fakeCertKey,
+    '-CAkey', fakePrivateKey,
+    '-CAcreateserial',
+    '-out', certPath,
+    '-days', '825',
+    '-sha256',
+    '-extfile', signConfPath,
+    '-extensions', 'v3_user_cert'
+  ]);
+
+  console.log(`Certificado gerado para ${usuarioFake.nome}: ${certPath}`);
+}
+
+
+
+async function validateWithFakeUser(fakeCert, fakeCA, rootCA, rootInter) {
+
+  console.log("Teste de validação de um documento por uma CA diferente de ca-root + ca-intermediate");
+
+  // If fakeCA != ca-raiz e fakeCA != intermediaria -> Falha no reconhecimento da CA.
+}
+
 async function main() {
 
-    
-    const usuarios = [
-        { nome: 'joao', email: 'joao@example.com', CPF: '123.456.666-00' },
-        { nome: 'maria', email: 'maria@example.com', CPF: '123.456.777-00' },
-        { nome: 'atacante', email: 'atacante@example.com', CPF: '123.456.888-00' }
-    ]
 
-    let running = true;
-    let key = 0;
-    while (running) {
-        await showMenu(); // Exibe o menu
-        const res = await readLine.question('Digite a opção para navegar na aplicação: ');
-        
-        
+  const usuarios = [
+    { nome: 'joao', email: 'joao@example.com', CPF: '123.456.666-00' },
+    { nome: 'maria', email: 'maria@example.com', CPF: '123.456.777-00' }
+  ]
 
-        switch (res) {
-            case '1': {
-                console.log('Gerando CA Raiz, CA Intermediária e emitindo certificados para usuários...');
-                try {
-                // Diretórios
-                const ROOT_CA_DIR = path.join('.', 'ca-raiz', 'root');
-                const INTER_CA_DIR = path.join('.', 'ca-intermediaria', 'intermediate');
-                const USERS_DIR = path.join('.', 'usuarios');
-
-                // 1) Root CA
-                const rootSubject = {
-                    C: 'BR',
-                    ST: 'Sao Paulo',
-                    L: 'Sao Paulo',
-                    O: 'MinhaCorp',
-                    OU: 'Infra',
-                    CN: 'MinhaCorp Root CA'
-                };
-                console.log('--- Gerando Root CA ---');
-                const root = await generateRootCA({ outDir: ROOT_CA_DIR, subject: rootSubject });
-                console.log('Root CA criada:', root.certPath);
-
-                // 2) Intermediate CA
-                const interSubject = {
-                    C: 'BR',
-                    ST: 'Sao Paulo',
-                    L: 'Sao Paulo',
-                    O: 'MinhaCorp',
-                    OU: 'Infra',
-                    CN: 'MinhaCorp Intermediate CA'
-                };
-                console.log('--- Gerando Intermediate CA e assinando com Root ---');
-                const inter = await generateIntermediateCA({
-                    outDir: INTER_CA_DIR,
-                    subject: interSubject,
-                    rootKeyPath: root.keyPath,
-                    rootCertPath: root.certPath
-                });
-                console.log('Intermediate CA criada:', inter.certPath);
-
-                // 3) Emitir certificados para usuários com a CA Intermediária
-                console.log('--- Emitindo certificados de usuários (assinados pela Intermediária) ---');
-                await generateAndSignUserCerts({
-                    usuarios,
-                    outRootDir: USERS_DIR,
-                    intermediateKey: inter.keyPath,
-                    intermediateCert: inter.certPath
-                });
-
-                console.log('Processo concluído. Verifique os diretórios ca/root, ca/intermediate e usuarios/*');
-                } catch (err) {
-                console.error('Erro durante geração das CAs/Certificados:', err.message || err);
-                }
-                break;
-            }
-            case '4':
-                console.log("Saindo!");
-                running = false;
-                break;
-            case '2':
-                // Assinar arquivos com a chave de um usuario válida
-                let pathToPrivateKey = await readLine.question(`Endereço do arquivo chave_privada.pem :`);
-                const privateKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
-                
-                // Mensagem para ser encriptada
-                let messageToEncript = await readLine.question(`Digite uma mensagem para ser encriptada: `)
-                // Gerar hash
-                const hashMessage = crypto.createHash('sha256').update(messageToEncript, 'utf8').digest('hex');
-                console.log('Hash (SHA-256):', hashMessage);
-                const signer = crypto.createSign('RSA-SHA256');
-                signer.update(messageToEncript, 'utf8');
-                signer.end();
+  let running = true;
+  let key = 0;
+  while (running) {
+    await showMenu(); // Exibe o menu
+    const res = await readLine.question('Digite a opção para navegar na aplicação: ');
 
 
-                let signatureBase64;
-                try {
-                    signatureBase64 = signer.sign(privateKeyContent, 'base64');
-                    } catch (err) {
-                    console.error('Falha ao assinar com a chave privada:', err.message || err);
-                    // trate o erro conforme necessário (continue/abort)
-                    break;
-                    }
 
-                console.log('Assinatura (Base64) gerada.');
+    switch (res) {
+      case '1': {
+        console.log('Gerando CA Raiz, CA Intermediária e emitindo certificados para usuários...');
+        try {
+          // Diretórios
+          const ROOT_CA_DIR = path.join('.', 'ca-raiz', 'root');
+          const INTER_CA_DIR = path.join('.', 'ca-intermediaria', 'intermediate');
+          const USERS_DIR = path.join('.', 'usuarios');
 
-                // Public pem
-                let publicPem = null;
-                try {
-                    publicPem = crypto.createPublicKey(privateKeyContent).export({ type: 'spki', format: 'pem' });
-                } catch (err) {
-                    console.warn('Não foi possível derivar chave pública da chave privada:', err.message || err);
-                }
+          // 1) Root CA
+          const rootSubject = {
+            C: 'BR',
+            ST: 'Sao Paulo',
+            L: 'Sao Paulo',
+            O: 'MinhaCorp',
+            OU: 'Infra',
+            CN: 'MinhaCorp Root CA'
+          };
+          console.log('--- Gerando Root CA ---');
+          const root = await generateRootCA({ outDir: ROOT_CA_DIR, subject: rootSubject });
+          console.log('Root CA criada:', root.certPath);
 
-                // Monta documento legível / verificável
-                const ts = Date.now();
-                const outName = `documento_${ts}`;
-                const signedDoc = {
-                    metadata: { createdAt: new Date().toISOString(), sourceKeyPath: pathToPrivateKey },
-                    message: messageToEncript,
-                    hashSHA256: hashMessage,
-                    signatureBase64,
-                    publicPem // pode ser null, então o verificador perguntará pela chave
-                };
+          // 2) Intermediate CA
+          const interSubject = {
+            C: 'BR',
+            ST: 'Sao Paulo',
+            L: 'Sao Paulo',
+            O: 'MinhaCorp',
+            OU: 'Infra',
+            CN: 'MinhaCorp Intermediate CA'
+          };
+          console.log('--- Gerando Intermediate CA e assinando com Root ---');
+          const inter = await generateIntermediateCA({
+            outDir: INTER_CA_DIR,
+            subject: interSubject,
+            rootKeyPath: root.keyPath,
+            rootCertPath: root.certPath
+          });
+          console.log('Intermediate CA criada:', inter.certPath);
 
-                const outJsonPath = path.join('.', `${outName}.assinatura.json`);
-                const outSigPath = path.join('.', `${outName}.assinatura.sig`);
+          // 3) Emitir certificados para usuários com a CA Intermediária
+          console.log('--- Emitindo certificados de usuários (assinados pela Intermediária) ---');
+          await generateAndSignUserCerts({
+            usuarios,
+            outRootDir: USERS_DIR,
+            intermediateKey: inter.keyPath,
+            intermediateCert: inter.certPath
+          });
 
-                await writeFile(outJsonPath, JSON.stringify(signedDoc, null, 2), { encoding: 'utf8', mode: 0o600 });
-                await writeFile(outSigPath, signatureBase64, { encoding: 'utf8', mode: 0o600 });
+          console.log('Processo concluído. Verifique os diretórios ca/root, ca/intermediate e usuarios/*');
+        } catch (err) {
+          console.error('Erro durante geração das CAs/Certificados:', err.message || err);
+        }
+        break;
+      }
+      case '4':
+        console.log("Saindo!");
+        running = false;
+        break;
+      case '2':
+        // Assinar arquivos com a chave de um usuario válida
+        let pathToPrivateKey = await readLine.question(`Endereço do arquivo chave_privada.pem :`);
+        const privateKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
 
-                console.log(`Documento assinado salvo em: ${outJsonPath}`);
-                console.log(`Assinatura pura salva em: ${outSigPath}`);
+        // Mensagem para ser encriptada
+        let messageToEncript = await readLine.question(`Digite uma mensagem para ser encriptada: `)
+        // Gerar hash
+        const hashMessage = crypto.createHash('sha256').update(messageToEncript, 'utf8').digest('hex');
+        console.log('Hash (SHA-256):', hashMessage);
+        const signer = crypto.createSign('RSA-SHA256');
+        signer.update(messageToEncript, 'utf8');
+        signer.end();
 
-                // Verificação
-                try {
-                    // Ler a chave publica exportada
-                    //let pathToPublicKey = await readLine.question(`Endereço do arquivo chave_publica.pem :`);
-                    //const publicKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
 
-                    //const publicKey = crypto.createPublicKey(privateKeyContent).export({ type: 'spki', format: 'pem' });
-                    const verifier = crypto.createVerify('RSA-SHA256');
-                    verifier.update(messageToEncript, 'utf8');
-                    verifier.end();
-                    const ok = verifier.verify(publicPem, signatureBase64, 'base64');
-                    console.log('Verificação local da assinatura:', ok ? ok : 'FALHOU');
-                    } catch (err) {
-                    console.warn('Verificação local não pôde ser executada (debug):', err.message || err);
-                    }
-                break;
-            case '3':
-                await verifyDocumentFromCase5();
-                break;
-
-            default:
-                console.log('Opção inválida! Tente novamente.');
+        let signatureBase64;
+        try {
+          signatureBase64 = signer.sign(privateKeyContent, 'base64');
+        } catch (err) {
+          console.error('Falha ao assinar com a chave privada:', err.message || err);
+          // trate o erro conforme necessário (continue/abort)
+          break;
         }
 
+        console.log('Assinatura (Base64) gerada.');
 
+        // Public pem
+        let publicPem = null;
+        try {
+          publicPem = crypto.createPublicKey(privateKeyContent).export({ type: 'spki', format: 'pem' });
+        } catch (err) {
+          console.warn('Não foi possível derivar chave pública da chave privada:', err.message || err);
+        }
+
+        // Monta documento legível / verificável
+        const ts = Date.now();
+        const outName = `documento_${ts}`;
+        const signedDoc = {
+          metadata: { createdAt: new Date().toISOString(), sourceKeyPath: pathToPrivateKey },
+          message: messageToEncript,
+          hashSHA256: hashMessage,
+          signatureBase64,
+          publicPem // pode ser null, então o verificador perguntará pela chave
+        };
+
+        const outJsonPath = path.join('.', `${outName}.assinatura.json`);
+        const outSigPath = path.join('.', `${outName}.assinatura.sig`);
+
+        await writeFile(outJsonPath, JSON.stringify(signedDoc, null, 2), { encoding: 'utf8', mode: 0o600 });
+        await writeFile(outSigPath, signatureBase64, { encoding: 'utf8', mode: 0o600 });
+
+        console.log(`Documento assinado salvo em: ${outJsonPath}`);
+        console.log(`Assinatura pura salva em: ${outSigPath}`);
+
+        // Verificação
+        try {
+          // Ler a chave publica exportada
+          //let pathToPublicKey = await readLine.question(`Endereço do arquivo chave_publica.pem :`);
+          //const publicKeyContent = await readFile(pathToPrivateKey, { encoding: 'utf8' });
+
+          //const publicKey = crypto.createPublicKey(privateKeyContent).export({ type: 'spki', format: 'pem' });
+          const verifier = crypto.createVerify('RSA-SHA256');
+          verifier.update(messageToEncript, 'utf8');
+          verifier.end();
+          const ok = verifier.verify(publicPem, signatureBase64, 'base64');
+          console.log('Verificação local da assinatura:', ok ? ok : 'FALHOU');
+        } catch (err) {
+          console.warn('Verificação local não pôde ser executada (debug):', err.message || err);
+        }
+        break;
+      case '3':
+        await verifyDocumentFromCase5();
+        break;
+      case '5':
+        const ROOT_CA_DIR = path.join('.', 'ca-fake', 'fake');
+        const rootSubject = {
+          C: 'BR',
+          ST: 'Sao Paulo',
+          L: 'Sao Paulo',
+          O: 'MinhaCorpFake',
+          OU: 'Infra',
+          CN: 'MinhaCorp Root CA'
+        };
+        const fakeCA = await generateFakeCA({ outDir: ROOT_CA_DIR, subject: rootSubject })
+
+        console.log("Fake CA: ", fakeCA.certPath);
+        // Criar usuario a partir da fakeCA
+
+        const ROOT_DIR = path.join('.', 'usuarios');
+
+        const usuarioFake = { nome: 'atacante', email: 'atacante@example.com', CPF: '123.456.888-00' }
+        const atacanteDir = path.join('.', 'usuarios');
+
+
+        const atacanteSubject = {
+          C: 'BR',
+          ST: 'Sao Paulo',
+          L: 'Sao Paulo',
+          O: 'MinhaCorp',
+          OU: 'Infra',
+          CN: 'MinhaCorp Fake CA'
+        };
+
+        const fakeUser = await generateAndSignFakeUserCerts({
+          usuarioFake,
+          outRootDir: ROOT_DIR,
+          fakePrivateKey: fakeCA.keyPath,
+          fakeCertKey: fakeCA.certPath
+        });
+        console.log("Fake user: ", fakeUser)
+
+        break;
+
+      default:
+        console.log('Opção inválida! Tente novamente.');
     }
 
-    readLine.close(); // Fecha a interface após sair do loop
+
+  }
+
+  readLine.close(); // Fecha a interface após sair do loop
 }
 
 main().catch((err) => console.error('Erro:', err));
